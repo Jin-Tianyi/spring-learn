@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jty.tx.mapper.AccountMapper">
+
+    <insert id="update" parameterType="com.jty.tx.entity.Account">
+        update  account_tbl t1
+        set t1.money =#{money}
+        <where>
+            t1.user_id = #{userId}
+        </where>
+    </insert>
+</mapper>

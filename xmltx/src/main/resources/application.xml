@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="GBK"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                            http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                            http://www.springframework.org/schema/tx
+                            https://www.springframework.org/schema/tx/spring-tx.xsd
+                            http://www.springframework.org/schema/aop
+                            https://www.springframework.org/schema/aop/spring-aop.xsd
+                            http://www.springframework.org/schema/context
+                            http://www.springframework.org/schema/context/spring-context-4.1.xsd">
+
+    <!--组件扫描-->
+    <context:component-scan base-package="tx.*"/>
+    <context:property-placeholder location="classpath:jdbc-config.properties" ignore-unresolvable="true"/>
+    <!--详细配置参数见 com.alibaba.druid.pool.DruidAbstractDataSource-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="driverClassName" value="${jdbc.driver}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="initialSize" value="1"/>
+        <property name="minIdle" value="1"/>
+        <property name="maxActive" value="20"/>
+        <property name="maxWait" value="60000"/>
+        <property name="timeBetweenEvictionRunsMillis" value="60000"/>
+    </bean>
+    <!--配置sqlSessionFactoryBean对象-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"></property>
+        <!--mybatis核心配置文件-->
+        <property name="configLocation" value="classpath:mybatis.xml"/>
+    </bean>
+    <!--配置事务管理器-->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!-- enable the configuration of transactional behavior based on annotations 开启事务注解-->
+    <!--<tx:annotation-driven transaction-manager="txManager"/>--><!-- a TransactionManager is still required -->
+    <!--配置aop通知-->
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <!-- the transactional semantics... -->
+        <tx:attributes>
+            <!--get方法事务只读-->
+            <tx:method name="get*" read-only="true" isolation="DEFAULT" timeout="-1" rollback-for="RuntimeException" propagation="REQUIRED" no-rollback-for="ArithmeticException"/>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+    <!--aop编程配置，配置切入点（即对该方法进行增强）,任意类型返回值 tx包下，OrderService的所有方法-->
+    <aop:config>
+        <aop:pointcut id="orderServiceOperation" expression="execution(* tx.OrderService.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="orderServiceOperation"/>
+    </aop:config>
+    <!--配置Mapper对象-->
+    <bean class="org.mybatis.spring.mapper.MapperFactoryBean" scope="singleton">
+        <property name="mapperInterface" value="tx.mapper.AccountMapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperFactoryBean" scope="singleton">
+        <property name="mapperInterface" value="tx.mapper.OrderMapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+    <bean class="org.mybatis.spring.mapper.MapperFactoryBean" scope="singleton">
+        <property name="mapperInterface" value="tx.mapper.StorageMapper"/>
+        <property name="sqlSessionFactory" ref="sqlSessionFactory"/>
+    </bean>
+
+    <!--注册OrderService bean-->
+    <bean id="orderService" class="tx.OrderService"/>
+</beans>

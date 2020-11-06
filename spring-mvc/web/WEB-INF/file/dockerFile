@@ -1,0 +1,9 @@
+FROM  openjdk:11
+LABEL  by=jty name=docker_boot description="boot容器测试" version="1.0"
+RUN mkdir -p /usr/local/boot/
+RUN cd /usr/local/boot/
+WORKDIR /usr/local/boot
+RUN mkdir /usr/local/boot/logs/
+COPY dockerFile-1.0-SNAPSHOT.jar  /usr/local/boot/app.jar
+EXPOSE  8989
+ENTRYPOINT ["java", "-jar", "app.jar"]
